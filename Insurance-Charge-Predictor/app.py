@@ -1,15 +1,21 @@
 import streamlit as st
 import pandas as pd
 import pickle
+from pathlib import Path  # 1. Import the Path library
+
+# --- Build a robust path to the model file ---
+# This makes the path relative to the app.py file itself
+script_directory = Path(__file__).parent
+model_path = script_directory / 'best_model.pkl'
 
 # --- Load the Model and Columns ---
-with open('best_model.pkl', 'rb') as f:
+with open(model_path, 'rb') as f: # 2. Use the new model_path
     model_data = pickle.load(f)
 
 model = model_data['model']
 model_columns = model_data['columns']
 
-# --- Streamlit App UI ---
+# --- Streamlit App UI (rest of the code is the same) ---
 st.set_page_config(page_title="Insurance Charge Predictor", layout="centered")
 st.title("💰 Insurance Charge Predictor")
 st.write("Enter the client's details to predict their insurance charge.")
@@ -25,12 +31,10 @@ with col1:
 with col2:
     children = st.number_input("Number of Children", min_value=0, max_value=10, value=0)
     smoker = st.selectbox("Smoker", ("yes", "no"))
-    # The regions are back to the original dataset's values
     region = st.selectbox("Region", ("southwest", "southeast", "northwest", "northeast"))
 
 # --- Prediction Logic ---
 if st.button("Predict Charges", use_container_width=True):
-    # Create a DataFrame from user inputs
     input_data = {
         'age': [age],
         'bmi': [bmi],
@@ -42,12 +46,9 @@ if st.button("Predict Charges", use_container_width=True):
         'region_southwest': [1 if region == 'southwest' else 0]
     }
     input_df = pd.DataFrame(input_data)
-
-    # Ensure columns are in the same order as during training
+    
     input_df = input_df.reindex(columns=model_columns, fill_value=0)
 
-    # Make prediction
     prediction = model.predict(input_df)
 
-    # Display result with the Rupee symbol
-    st.success(f"The predicted insurance charge is: ₹{prediction[0]:.2f}")  # <-- Symbol changed here
+    st.success(f"The predicted insurance charge is: ₹{prediction[0]:.2f}")
